@@ -1,5 +1,8 @@
 # CourseRAG
 
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF0F6F?logo=streamlit&logoColor=white)](https://streamlit.io/)
+
 一个可本地运行的课程资料 RAG 问答系统。支持多格式资料上传、语义检索、引用溯源、回答导出与聊天历史导出。
 
 ## 功能

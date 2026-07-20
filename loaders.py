@@ -1,4 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
+
+"""Load course files into chunked documents with section/page metadata for RAG."""
 
 import csv
 import json
@@ -13,6 +15,7 @@ import openpyxl
 import pymupdf
 from pptx import Presentation
 
+"""Load course files into chunked documents with section/page metadata for RAG."""
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".md", ".txt", ".json", ".html"}
 DEFAULT_CHUNK_SIZE = 450
@@ -32,9 +35,9 @@ def _extract_sections(text: str) -> tuple[list[dict], str]:
     lines = text.splitlines()
     for offset, line in enumerate(lines):
         if re.match(r"^(#{1,6}\s+.+|[-*]\s+.+)$", line):
-            sections.append({"title": current_title, "start": current_start, "end": sum(len(l) + 1 for l in lines[:offset])})
+            sections.append({"title": current_title, "start": current_start, "end": sum(len(line) + 1 for line in lines[:offset])})
             current_title = _normalize_section_name(line)
-            current_start = sum(len(l) + 1 for l in lines[:offset])
+            current_start = sum(len(line) + 1 for line in lines[:offset])
     sections.append({"title": current_title, "start": current_start, "end": len(text)})
     return sections, text
 
