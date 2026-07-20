@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.env
+
+# Streamlit
+.streamlit/
+
+# Chroma / local runtime artifacts
+storage/
+exports/
+*.db
+*.sqlite3
+
+# Docs / screenshots
+screenshot_*.png
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Patch / helper scratch files
+make_patch.py
+fill_patch.py
+replace_history.py
+docs_screenshot.py
+probe_app.py
+patch_app.py
