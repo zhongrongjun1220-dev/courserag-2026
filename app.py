@@ -1,3 +1,9 @@
+"""Streamlit frontend for CourseRAG.
+
+This module owns the UI, chat history persistence, document ingestion, vector
+store queries, and answer generation. Configuration is centralized in
+``AppConfig`` so behavior can be tuned from one place."""
+
 import json
 import os
 from dataclasses import dataclass
@@ -28,6 +34,8 @@ PERSIST_DIR.mkdir(exist_ok=True)
 
 @dataclass(frozen=True)
 class AppConfig:
+    """Centralize tunable RAG and UI settings."""
+
     collection_name: str = COLLECTION_NAME
     embedding_model: str = EMBEDDING_MODEL
     model: str = OPENAI_MODEL
@@ -58,15 +66,18 @@ st.caption("上传课程资料，基于本地向量库做语义检索问答，�
 
 @st.cache_resource
 def get_chroma_client() -> chromadb.PersistentClient:
+    """Return a cached local Chroma client."""
     return chromadb.PersistentClient(path=str(PERSIST_DIR))
 
 
 @st.cache_resource
 def get_embedding_function() -> ONNXMiniLM_L6_V2:
+    """Return a cached ONNX embedding function."""
     return ONNXMiniLM_L6_V2()
 
 
 def get_collection() -> chromadb.Collection:
+    """Get or create the shared course document collection."""
     chroma_client = get_chroma_client()
     embedding_function = get_embedding_function()
     return chroma_client.get_or_create_collection(
@@ -77,6 +88,7 @@ def get_collection() -> chromadb.Collection:
 
 
 def get_openai_client() -> OpenAI:
+    """Build an OpenAI-compatible client from environment configuration."""
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
     if not api_key:
@@ -85,6 +97,7 @@ def get_openai_client() -> OpenAI:
 
 
 def ingest_files(files: List[st.runtime.uploaded_file_manager.UploadedFile]) -> tuple[int, List[dict]]:
+    """Persist uploaded files into the local vector store."""
     collection = get_collection()
     total_chunks = 0
     sources = []
@@ -120,6 +133,7 @@ def ingest_files(files: List[st.runtime.uploaded_file_manager.UploadedFile]) -> 
 
 
 def query_vector_store(question: str) -> List[dict]:
+    """Retrieve the most relevant chunks for a user question."""
     collection = get_collection()
     result = collection.query(query_texts=[question], n_results=CONFIG.top_k)
     documents = result.get("documents", [[]])[0]
@@ -138,6 +152,7 @@ def query_vector_store(question: str) -> List[dict]:
 
 
 def build_context(source_documents: List[dict]) -> tuple[str, List[dict]]:
+    """Assemble retrieved chunks into a compact prompt context."""
     if not source_documents:
         return "", []
     current = ""
@@ -158,6 +173,7 @@ def build_context(source_documents: List[dict]) -> tuple[str, List[dict]]:
 
 
 def generate_answer(question: str, source_documents: List[dict]) -> tuple[str, List[dict]]:
+    """Create a grounded answer from retrieved course chunks."""
     context, selected_documents = build_context(source_documents)
     user_prompt = (
         "请优先依据资料作答；若多个来源都提到同一结论，请直接总结；"
@@ -186,6 +202,7 @@ def generate_answer(question: str, source_documents: List[dict]) -> tuple[str, L
 
 
 def render_sources(sources: List[dict]) -> None:
+    """Render expandable source citations beneath each answer."""
     if not sources:
         return
     st.markdown("### 引用来源")
@@ -201,6 +218,7 @@ def render_sources(sources: List[dict]) -> None:
 
 
 def export_result(question: str, answer: str, sources: List[dict]) -> None:
+    """Expose single-turn export controls for Markdown and JSON."""
     payload = {
         "question": question,
         "answer": answer,
@@ -243,6 +261,7 @@ def export_result(question: str, answer: str, sources: List[dict]) -> None:
 
 
 def _load_persisted_history() -> List[dict]:
+    """Load previously saved chat history from disk."""
     if not CONFIG.history_file.exists():
         return []
     try:
@@ -255,10 +274,12 @@ def _load_persisted_history() -> List[dict]:
 
 
 def _save_persisted_history(history: List[dict]) -> None:
+    """Write the current chat history to disk."""
     CONFIG.history_file.write_text(json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _restore_history() -> List[dict]:
+    """Restore persisted history into the current Streamlit session."""
     persisted = _load_persisted_history()
     if persisted:
         st.session_state.history = persisted
@@ -267,10 +288,12 @@ def _restore_history() -> List[dict]:
 
 
 def _persist_history() -> None:
+    """Persist the current session history."""
     _save_persisted_history(st.session_state.get("history", []))
 
 
 def render_history_exporter() -> None:
+    """Render sidebar controls for exporting the full chat history."""
     st.sidebar.markdown("### 历史记录")
     if "history" not in st.session_state or not st.session_state.history:
         st.sidebar.caption("当前还没有聊天历史，可以继续问答后在该处导出。")
@@ -307,6 +330,7 @@ def render_history_exporter() -> None:
 
 
 def main() -> None:
+    """Run the main CourseRAG chat interface."""
     st.sidebar.header("资料库")
     uploaded_files = st.sidebar.file_uploader(
         "上传课程资料",
